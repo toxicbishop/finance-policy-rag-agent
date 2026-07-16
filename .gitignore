@@ -4,3 +4,7 @@ node_modules/
 credentials.json
 *.log
 .txt
+.venv
+.venv/
+__pycache__/
+*.pyc
