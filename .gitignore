@@ -1,0 +1,6 @@
+.env
+.n8n/
+node_modules/
+credentials.json
+*.log
+.txt

@@ -1,0 +1,632 @@
+{
+  "name": "Finance RAG — Retrieval Agent",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "ffe70272-e045-4f63-bf53-88a96f1624ea",
+      "name": "Run Ingestion",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        256,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "policyText",
+              "stringValue": "EXPENSE REIMBURSEMENT POLICY 1. Employee expense reimbursement limits: INR 5,000 (junior); INR 15,000 (senior); INR 30,000 (managers). 2. Expenses exceeding limits require pre-approval from Finance. 3. Receipts mandatory for claims above INR 500. 4. Meal expenses: INR 300 per meal, max 3 per day during travel. 5. Reimbursement processing: 7 working days.  GST AND TAX POLICY 1. ITC can be claimed on business purchases with valid GST invoices. 2. ITC NOT available on food, personal expenses, or club memberships. 3. Vendor invoices must contain GSTIN, HSN code, and tax breakdown.  TRAVEL AND HOTEL POLICY 1. Hotel limits: INR 5,000 (Metro cities like Mumbai/Delhi); INR 3,500 (Tier-2 cities). 2. Domestic travel: Economy class for all below VP level. 3. Daily per diem: INR 1,000 covering all meals."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c326f52e-d6d0-4042-9e77-385f396708bb",
+      "name": "Finance Policy KB",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        448,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Split finance policy text into overlapping chunks for better RAG retrieval\nconst text = $input.item.json.policyText;\nconst CHUNK_WORDS = 200;  // words per chunk\nconst OVERLAP_WORDS = 30; // overlap between chunks to preserve context\n\nconst words = text.split(/\\s+/).filter(w => w.length > 0);\nconst chunks = [];\nconst step = CHUNK_WORDS - OVERLAP_WORDS;\n\nfor (let i = 0; i < words.length; i += step) {\n  const slice = words.slice(i, i + CHUNK_WORDS);\n  if (slice.length < 15) break; // skip tiny trailing fragments\n\n  const chunkIndex = Math.floor(i / step);\n  chunks.push({\n    json: {\n      chunkId: `finance-policy-chunk-${chunkIndex}`,\n      chunkText: slice.join(' '),\n      chunkIndex\n    }\n  });\n}\nreturn chunks;\n"
+      },
+      "id": "762c8ae7-5a91-4fa3-b763-302bd4422635",
+      "name": "Split Into Chunks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2:embedContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "YOUR_GEMINI_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'models/gemini-embedding-2', content: { parts: [{ text: $json.chunkText }] } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "f07a3186-4564-4000-8e7e-3b4bcdbfe425",
+      "name": "Gemini Embed Chunk",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        816,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR-PINE-CONE-HOST-URL/vectors/upsert",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Api-Key",
+              "value": "YOUR-PINECODE-API-KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ vectors: [{ id: $('Split Into Chunks').item.json.chunkId, values: $json.embedding.values, metadata: { text: $('Split Into Chunks').item.json.chunkText, source: 'finance-policy-kb', chunkIndex: $('Split Into Chunks').item.json.chunkIndex } }], namespace: 'finance-kb' }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "49b1d91b-77e8-4d43-9254-3f4243373278",
+      "name": "Upsert to Pinecone",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1040,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "updates": "={{ [\"message\"] }}",
+        "additionalFields": {}
+      },
+      "id": "dd1600d9-b267-42fd-bbdd-d44cb74d1674",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2208,
+        -160
+      ],
+      "webhookId": "193e330d-4e1d-4922-8b17-1fb0cc26e596",
+      "credentials": {
+        "telegramApi": {
+          "id": "OqD3Epzn5yQFcX1q",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2:embedContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "YOUR-GEMINI-API-KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'models/gemini-embedding-2', content: { parts: [{ text: $json.message.text }] } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "d4b63716-d11d-4916-9f74-e6d7f96cf85d",
+      "name": "Embed Question",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -2016,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR-PINE-CONE-HOST-URL/query",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Api-Key",
+              "value": "YOUR-PINECODE-API-KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ vector: $json.embedding.values, topK: 3, includeMetadata: true, namespace: 'finance-kb' }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "781d4e85-2be0-4101-a512-51c767ba86e3",
+      "name": "Query Pinecone",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -1760,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Pull Pinecone matches\nconst matches = $input.item.json.matches || [];\n\n// Build context from retrieved chunks\nconst context = matches.length > 0\n  ? matches.map((m, i) => `[Source ${i + 1}]\\n${m.metadata?.text || ''}\\n`).join('\\n')\n  : 'No relevant policy sections found in the knowledge base.';\n\n// Get original question and user info from Telegram trigger\nconst telegramMsg = $('Telegram Trigger').item.json.message;\nconst questionText = telegramMsg.text;\nconst username = telegramMsg.from?.username\n  ? `@${telegramMsg.from.username}`\n  : (telegramMsg.from?.first_name || 'Unknown User');\nconst chatId = telegramMsg.chat.id;\n\nconst prompt = `You are a Finance Policy Assistant for a company. Your job is to answer employee questions accurately using ONLY the company's finance policy documentation provided below.\n\nRULES:\n- Answer using only the context provided. Do not use outside knowledge.\n- If the answer is not in the context, respond with exactly: \"I don't know. This query isn't covered in the finance policy documentation — I'm escalating it to the finance team.\"\n- Keep answers concise, clear, and professional.\n- If there are specific numbers (limits, thresholds, days), state them explicitly.\n\nFINANCE POLICY CONTEXT:\n${context}\n\nEMPLOYEE QUESTION: ${questionText}\n\nANSWER:`;\n\nreturn {\n  json: {\n    prompt: prompt,\n    questionText: questionText,\n    username: username,\n    chatId: chatId\n  }\n};"
+      },
+      "id": "38968120-0e39-4246-8fb1-d0d2f366a07e",
+      "name": "Build RAG Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1504,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "YOUR-GEMINI-API-KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 512 } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "27e4b67c-02ba-43ec-aa9d-6cf92dbc5f0d",
+      "name": "Generate Answer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -1280,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Extract answer text from Gemini response\nconst candidates = $input.item.json.candidates || [];\nconst answerText = candidates[0]?.content?.parts?.[0]?.text\n  || \"I don't know. I couldn't retrieve an answer — escalating to the finance team.\";\n\n// Detect low-confidence or out-of-scope answers\nconst uncertaintyPhrases = [\n  \"i don't know\",\n  \"i do not know\",\n  \"not covered\",\n  \"not in the context\",\n  \"not found in\",\n  \"i'm escalating\",\n  \"escalating it to\",\n  \"cannot answer\",\n  \"no information\",\n  \"not available in\"\n];\nconst lower = answerText.toLowerCase();\nconst isUncertain = uncertaintyPhrases.some(phrase => lower.includes(phrase));\n\n// Pull context from upstream nodes\nconst buildPromptData = $('Build RAG Prompt').item.json;\n\nreturn {\n  json: {\n    answerText: answerText.trim(),\n    isUncertain: isUncertain,\n    questionText: buildPromptData.questionText,\n    username: buildPromptData.username,\n    chatId: buildPromptData.chatId,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "09458dba-e79b-4803-85a7-e9601d0e290b",
+      "name": "Extract Answer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1088,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "GOOGLE-SHEET-DOCUMENT-ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Audit Log",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $json.timestamp }}",
+            "Username": "={{ $json.username }}",
+            "Question": "={{ $json.questionText }}",
+            "Answer": "={{ $json.answerText }}",
+            "Escalated": "={{ $json.isUncertain ? 'YES' : 'NO' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Username",
+              "displayName": "Username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Question",
+              "displayName": "Question",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Answer",
+              "displayName": "Answer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Escalated",
+              "displayName": "Escalated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0956d490-78f4-42f5-adb7-f25be2be5e91",
+      "name": "Log to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -896,
+        -160
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "KhLeC859R4sW7gCE",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "condition-uncertain",
+              "leftValue": "={{ $json.isUncertain }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1bbd1820-b71d-463e-8ba5-2e542d3b17c9",
+      "name": "Is Answer Uncertain?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -672,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "YOUR-GMAIL",
+        "subject": "={{ '⚠️ Unresolved Finance Query from ' + $json.username }}",
+        "message": "={{ '<p><strong>Finance Policy Bot — Escalation Alert</strong></p><p>A query came in via Telegram that the bot could not confidently answer from the knowledge base.</p><p><strong>User:</strong> ' + $json.username + '</p><p><strong>Question:</strong> ' + $json.questionText + '</p><p><strong>Bot Response:</strong> ' + $json.answerText + '</p><p><strong>Time:</strong> ' + $json.timestamp + '</p><p>Please respond to this employee directly.</p>' }}",
+        "options": {}
+      },
+      "id": "e100ddca-1826-43d2-923c-8bfa398e922c",
+      "name": "Gmail Escalation Alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        -496,
+        -368
+      ],
+      "webhookId": "a4556c60-11dd-4e5c-bc85-122c5dfae683",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "oXYd0vO8h1HolYQI",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Extract Answer').item.json.chatId }}",
+        "text": "={{ '⚠️ ' + $('Extract Answer').item.json.answerText + '\\n\\n_You will hear back from the finance team shortly._' }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "8b5815ec-7ba0-4acb-b60c-facd9fbd00e8",
+      "name": "Telegram Reply — Escalated",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        -368
+      ],
+      "webhookId": "3674e963-2ae2-42b5-8c74-4bbe68a8cf83",
+      "credentials": {
+        "telegramApi": {
+          "id": "OqD3Epzn5yQFcX1q",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ '📋 *Finance Policy Answer*\\n\\n' + $json.answerText }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "729a2d6c-5f5a-455f-8738-d8b996dc3f38",
+      "name": "Telegram Reply — Answer",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        48
+      ],
+      "webhookId": "035436fd-e695-4223-aad3-73df66dd1077",
+      "credentials": {
+        "telegramApi": {
+          "id": "OqD3Epzn5yQFcX1q",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Run Ingestion": {
+      "main": [
+        [
+          {
+            "node": "Finance Policy KB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finance Policy KB": {
+      "main": [
+        [
+          {
+            "node": "Split Into Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Into Chunks": {
+      "main": [
+        [
+          {
+            "node": "Gemini Embed Chunk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Embed Chunk": {
+      "main": [
+        [
+          {
+            "node": "Upsert to Pinecone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Embed Question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embed Question": {
+      "main": [
+        [
+          {
+            "node": "Query Pinecone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Pinecone": {
+      "main": [
+        [
+          {
+            "node": "Build RAG Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build RAG Prompt": {
+      "main": [
+        [
+          {
+            "node": "Generate Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Answer": {
+      "main": [
+        [
+          {
+            "node": "Extract Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Answer": {
+      "main": [
+        [
+          {
+            "node": "Log to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Is Answer Uncertain?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Answer Uncertain?": {
+      "main": [
+        [
+          {
+            "node": "Gmail Escalation Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram Reply — Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Escalation Alert": {
+      "main": [
+        [
+          {
+            "node": "Telegram Reply — Escalated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "c1940f7d-3b40-4995-9211-955dc6f373b4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "48074d47313824a8606d1d3b6e29e642e8007812c7a92d8562e9695848ccbab4"
+  },
+  "id": "vyd4jpucm7rKYEH5",
+  "tags": []
+}
