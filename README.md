@@ -23,13 +23,13 @@ A 24/7 automated Telegram bot built with **n8n** that answers finance policy que
 
 ```mermaid
 graph TD
-    subgraph Ingestion Pipeline (Run Once)
+    subgraph Ingestion_Pipeline [Ingestion Pipeline - Run Once]
         A[Finance Policy Text] --> B[Split into Chunks]
         B --> C[Gemini Embeddings]
         C --> D[(Pinecone Vector DB)]
     end
 
-    subgraph Retrieval Pipeline (Live)
+    subgraph Retrieval_Pipeline [Retrieval Pipeline - Live]
         E[Telegram Message] --> F[Embed Question]
         F --> G[Query Pinecone]
         G --> H[Build RAG Prompt]
