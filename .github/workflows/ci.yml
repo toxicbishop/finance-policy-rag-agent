@@ -1,0 +1,40 @@
+name: Python CI
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+        cache: "pip"
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install ruff pytest-asyncio
+        
+    - name: Lint with Ruff
+      run: |
+        # Ruff is extremely fast and checks for syntax errors/bad practices
+        ruff check backend/ scripts/ dashboard/ --output-format=github
+        
+    - name: Test with pytest
+      env:
+        # Mock environment variables so imports don't fail during tests
+        GEMINI_API_KEY: "mock_gemini_key"
+        PINECONE_API_KEY: "mock_pinecone_key"
+        PINECONE_HOST: "https://mock.pinecone.io"
+      run: |
+        pytest backend/tests/ -v
