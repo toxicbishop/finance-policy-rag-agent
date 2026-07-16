@@ -1,4 +1,3 @@
-import pytest
 from scripts.ingest import chunk_by_section, extract_header
 
 def test_extract_header():
