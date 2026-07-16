@@ -42,22 +42,41 @@ graph TD
     end
 ```
 
+## Showcase
+
+![Telegram Chatbot](assets/chat-bot.png)
+![n8n Workflow](assets/n8n-workflow.png)
+![Audit Spreadsheet](assets/spreadsheet.png)
+
 ## Setup Instructions
 
-This repository contains exported n8n workflow JSON files that you can import directly into your own n8n instance.
+### 1. Prerequisites
+You will need API keys for the following services:
+- **Google Gemini**: Get a free API key from [Google AI Studio](https://aistudio.google.com/).
+- **Pinecone**: Create a free account at [Pinecone](https://www.pinecone.io/) and create an index with dimension `768` and metric `cosine`.
+- **Telegram**: Use BotFather on Telegram to create a bot and get an HTTP API token.
 
-Please follow the detailed, step-by-step instructions in the [**SETUP_GUIDE.md**](SETUP_GUIDE.md) file to get your environment configured. The setup guide covers:
+### 2. Import into n8n
+1. Open your n8n instance.
+2. Go to **Workflows** -> **Add Workflow** -> click the **...** (three dots) -> **Import from File**.
+3. Import `ingestion_workflow.json` first.
+4. Import `Finance RAG — Retrieval Agent.json` second.
 
-- Generating all necessary API keys and credentials
-- Importing the workflows into n8n
-- Running the ingestion pipeline
-- Testing the live retrieval agent
+### 3. Add Credentials & Keys
+- Inside the n8n UI, update the HTTP Request nodes by entering your **Pinecone API Key**, **Pinecone Host URL**, and **Gemini API Key**.
+- Create n8n credentials for **Telegram**, **Google Sheets**, and **Gmail** when prompted by the respective nodes.
+
+### 4. Run the Pipeline
+1. Open the **Ingestion Workflow** and click **Test Workflow** (or **Execute**) to chunk and upload the finance policy text to your Pinecone vector database. You only need to do this once!
+2. Open the **Retrieval Agent Workflow**, make sure your Telegram bot is linked, and click **Test Workflow**.
+3. Send a message to your bot on Telegram (e.g., "How many days do I have to process a reimbursement?").
+4. Watch the magic happen!
 
 ## Repository Contents
 
 - `ingestion_workflow.json` - The n8n workflow that chunks your policy text, generates embeddings, and stores them in Pinecone.
 - `Finance RAG — Retrieval Agent.json` - The live n8n workflow that listens to Telegram, queries the vector database, generates answers, logs to Google Sheets, and handles escalations.
-- `SETUP_GUIDE.md` - Comprehensive instructions for configuring and running the agent.
+- `assets/` - Project screenshots.
 - `.gitignore` - Standard exclusions for n8n projects.
 
 ## License
