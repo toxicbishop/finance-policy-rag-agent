@@ -50,6 +50,8 @@ graph TD
 
 ## Setup Instructions
 
+*For a full, comprehensive walkthrough, please see the [**SETUP-GUIDE.md**](SETUP-GUIDE.md).*
+
 ### 1. Prerequisites
 You will need API keys for the following services:
 - **Google Gemini**: Get a free API key from [Google AI Studio](https://aistudio.google.com/).
@@ -77,6 +79,7 @@ You will need API keys for the following services:
 - `ingestion_workflow.json` - The n8n workflow that chunks your policy text, generates embeddings, and stores them in Pinecone.
 - `Finance RAG — Retrieval Agent.json` - The live n8n workflow that listens to Telegram, queries the vector database, generates answers, logs to Google Sheets, and handles escalations.
 - `assets/` - Project screenshots.
+- `SETUP-GUIDE.md` - Comprehensive instructions for configuring and running the agent.
 - `.gitignore` - Standard exclusions for n8n projects.
 
 ## License
