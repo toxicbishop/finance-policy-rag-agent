@@ -1,6 +1,6 @@
 # Finance Policy RAG Agent
 
-[![CI](https://github.com/toxicbishop/finance-policy-rag-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/toxicbishop/finance-policy-rag-agent/actions/workflows/ci.yml)
+[![Python CI](https://github.com/toxicbishop/finance-policy-rag-agent/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/toxicbishop/finance-policy-rag-agent/actions/workflows/ci.yml)
 [![Live API](https://img.shields.io/badge/API-Live-brightgreen)](https://finance-rag-api.onrender.com/health)
 [![Dashboard](https://img.shields.io/badge/Dashboard-Live-blue)](https://toxicbishop-finance-rag-dashboard.streamlit.app)
 ![Python](https://img.shields.io/badge/python-3.12.x-blue.svg)
