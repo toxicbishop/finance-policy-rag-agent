@@ -2,8 +2,6 @@ import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 
 
-from backend.embedder import embed
-
 
 # --- embedder tests ---
 
