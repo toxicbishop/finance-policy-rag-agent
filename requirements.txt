@@ -3,4 +3,5 @@ uvicorn
 httpx
 streamlit
 pytest
+pytest-asyncio
 pandas
