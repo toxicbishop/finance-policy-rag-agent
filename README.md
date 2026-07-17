@@ -1,5 +1,11 @@
 # Finance Policy RAG Agent
 
+[![CI](https://github.com/toxicbishop/finance-policy-rag-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/toxicbishop/finance-policy-rag-agent/actions/workflows/ci.yml)
+[![Live API](https://img.shields.io/badge/API-Live-brightgreen)](https://finance-rag-api.onrender.com/health)
+[![Dashboard](https://img.shields.io/badge/Dashboard-Live-blue)](https://toxicbishop-finance-rag-dashboard.streamlit.app)
+
+**[🔗 Live API](https://finance-rag-api.onrender.com/docs)** | **[📊 Dashboard](https://toxicbishop-finance-rag-dashboard.streamlit.app)**
+
 Finance teams in mid-size companies spend ~15% of their time answering repetitive policy questions ("how many days to file a reimbursement?", "what's the travel advance limit?"). This bot eliminates that by providing a 24/7 automated Telegram interface that answers policy questions using a Retrieval-Augmented Generation (RAG) pipeline. It logs every Q&A to a compliance spreadsheet and automatically escalates unknown queries via email to the finance team.
 
 ## Architecture decision summary
