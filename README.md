@@ -2,14 +2,14 @@
 
 [![Python CI](https://github.com/toxicbishop/finance-policy-rag-agent/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/toxicbishop/finance-policy-rag-agent/actions/workflows/ci.yml)
 [![Live API](https://img.shields.io/badge/API-Live-brightgreen)](https://finance-rag-api.onrender.com/health)
-[![Dashboard](https://img.shields.io/badge/Dashboard-Live-blue)](https://toxicbishop-finance-rag-dashboard.streamlit.app)
+[![Dashboard](https://img.shields.io/badge/Dashboard-Live-blue)](https://finance-rag-dashboard.streamlit.app)
 ![Python](https://img.shields.io/badge/python-3.12.x-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white)
 ![n8n](https://img.shields.io/badge/n8n-FF6D5A?style=flat&logo=n8n&logoColor=white)
 ![Pinecone](https://img.shields.io/badge/Pinecone-000000?style=flat&logo=pinecone&logoColor=white)
 
-**[🔗 Live API](https://finance-rag-api.onrender.com/docs)** | **[📊 Dashboard](https://toxicbishop-finance-rag-dashboard.streamlit.app)**
+**[🔗 Live API](https://finance-rag-api.onrender.com/docs)** | **[📊 Dashboard](https://finance-rag-dashboard.streamlit.app)**
 
 Finance teams in mid-size companies spend ~15% of their time answering repetitive policy questions ("how many days to file a reimbursement?", "what's the travel advance limit?"). This bot eliminates that by providing a 24/7 automated Telegram interface that answers policy questions using a Retrieval-Augmented Generation (RAG) pipeline. It logs every Q&A to a compliance spreadsheet and automatically escalates unknown queries via email to the finance team.
 
