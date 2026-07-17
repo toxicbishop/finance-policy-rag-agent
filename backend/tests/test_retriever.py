@@ -1,9 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
-import httpx
 
-
-from backend.retriever import retrieve
 
 
 # --- embedder tests ---
