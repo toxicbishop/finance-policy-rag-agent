@@ -3,7 +3,7 @@
 [![CI](https://github.com/toxicbishop/finance-policy-rag-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/toxicbishop/finance-policy-rag-agent/actions/workflows/ci.yml)
 [![Live API](https://img.shields.io/badge/API-Live-brightgreen)](https://finance-rag-api.onrender.com/health)
 [![Dashboard](https://img.shields.io/badge/Dashboard-Live-blue)](https://toxicbishop-finance-rag-dashboard.streamlit.app)
-![Python](https://img.shields.io/badge/python-3.12+-blue.svg)
+![Python](https://img.shields.io/badge/python-3.12.x-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white)
 ![n8n](https://img.shields.io/badge/n8n-FF6D5A?style=flat&logo=n8n&logoColor=white)
