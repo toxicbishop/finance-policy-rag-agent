@@ -21,7 +21,10 @@ async def test_embed_returns_vector():
             return_value=mock_response
         )
         with patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}):
-            result = await embed("What is the reimbursement limit?")
+            import importlib
+            import backend.embedder as embedder_module
+            importlib.reload(embedder_module)
+            result = await embedder_module.embed("What is the reimbursement limit?")
 
     assert result == [0.1, 0.2, 0.3]
 
@@ -58,7 +61,7 @@ async def test_retrieve_returns_matches():
     }
     mock_response.raise_for_status = MagicMock()
 
-    with patch("backend.retriever.embed", AsyncMock(return_value=mock_embed_vec)), \
+    with patch("backend.embedder.embed", AsyncMock(return_value=mock_embed_vec)), \
          patch("backend.retriever.httpx.AsyncClient") as mock_client, \
          patch.dict("os.environ", {
              "PINECONE_HOST": "https://test.pinecone.io",
@@ -93,7 +96,7 @@ async def test_retrieve_empty_matches():
     mock_response.json.return_value = {"matches": []}
     mock_response.raise_for_status = MagicMock()
 
-    with patch("backend.retriever.embed", AsyncMock(return_value=[0.0] * 768)), \
+    with patch("backend.embedder.embed", AsyncMock(return_value=[0.0] * 768)), \
          patch("backend.retriever.httpx.AsyncClient") as mock_client, \
          patch.dict("os.environ", {
              "PINECONE_HOST": "https://test.pinecone.io",
